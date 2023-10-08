@@ -49,6 +49,7 @@ internal sealed class UnixDomainSocketDataTransport : IDataTransport, IDisposabl
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"UnixDomainSocketDataTransport: {ex.Message}");
             ExporterEventSource.Log.ExporterException("UDS unavailable at startup.", ex);
         }
     }
@@ -68,11 +69,13 @@ internal sealed class UnixDomainSocketDataTransport : IDataTransport, IDisposabl
                 this.Reconnect();
             }
 
+            Console.WriteLine($"UnixDomainSocketDataTransport: send to size {size}.");
             this.socket.Send(data, size, SocketFlags.None);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Re-throw the exception so that Export method catches it and sets the ExportResult correctly.
+            Console.WriteLine($"UnixDomainSocketDataTransport: Failed to send to size {size}, ex: {ex.Message}.");
             throw;
         }
     }
@@ -90,10 +93,12 @@ internal sealed class UnixDomainSocketDataTransport : IDataTransport, IDisposabl
             {
                 SendTimeout = this.timeoutMilliseconds,
             };
+            Console.WriteLine($"UnixDomainSocketDataTransport connect to {this.unixEndpoint}.");
             this.socket.Connect(this.unixEndpoint);
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"UnixDomainSocketDataTransport: Failed to connect to {this.unixEndpoint}, ex: {ex.Message}.");
             ExporterEventSource.Log.ExporterException("UDS Connect failed.", ex);
 
             // Re-throw the exception to

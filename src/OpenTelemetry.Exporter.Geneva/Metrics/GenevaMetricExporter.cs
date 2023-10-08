@@ -82,6 +82,7 @@ public class GenevaMetricExporter : BaseExporter<Metric>
                 }
 
                 var unixDomainSocketPath = connectionStringBuilder.ParseUnixDomainSocketPath();
+                Console.WriteLine($"GenevaMetricExporter unixDomainSocketPath={unixDomainSocketPath}");
                 this.metricDataTransport = new MetricUnixDataTransport(unixDomainSocketPath);
                 break;
             case TransportProtocol.Unspecified:
@@ -116,8 +117,11 @@ public class GenevaMetricExporter : BaseExporter<Metric>
         string metricNamespace = this.defaultMetricNamespace;
 
         var result = ExportResult.Success;
+        Console.WriteLine($"GenevaMetricExporter::Export count {batch.Count}, monitoringAccount={monitoringAccount}, metricNamespace={metricNamespace}");
+
         foreach (var metric in batch)
         {
+            Console.WriteLine($"GenevaMetricExporter::Export metric name {metric.Name}");
             foreach (ref readonly var metricPoint in metric.GetMetricPoints())
             {
                 try
@@ -125,6 +129,7 @@ public class GenevaMetricExporter : BaseExporter<Metric>
 #if EXPOSE_EXPERIMENTAL_FEATURES
                     var exemplars = metricPoint.GetExemplars();
 #endif
+                    Console.WriteLine($"GenevaMetricExporter::Export MetricType {metric.MetricType}");
 
                     switch (metric.MetricType)
                     {
@@ -143,6 +148,7 @@ public class GenevaMetricExporter : BaseExporter<Metric>
 #endif
                                     out monitoringAccount,
                                     out metricNamespace);
+                                Console.WriteLine($"GenevaMetricExporter::Export send MetricType length {bodyLength}.");
                                 this.metricDataTransport.Send(MetricEventType.TLV, this.buffer, bodyLength);
                                 break;
                             }
@@ -261,11 +267,14 @@ public class GenevaMetricExporter : BaseExporter<Metric>
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"GenevaMetricExporter::Export failed {ex.Message}");
                     ExporterEventSource.Log.FailedToSendMetricData(monitoringAccount, metricNamespace, metric.Name, ex); // TODO: preallocate exception or no exception
                     result = ExportResult.Failure;
                 }
             }
         }
+
+        Console.WriteLine($"GenevaMetricExporter::Export finished.");
 
         return result;
     }
